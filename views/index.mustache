@@ -22,34 +22,34 @@
                         </div>
 
                         <div class="grid-item">
-                            <label id="clientIdLabel" for="clientId">Client Id:</label><br/>
-                            <input name="clientId"
-                                id="clientId"
+                            <label id="client_id_label" for="client_id">Client Id:</label><br/>
+                            <input name="client_id"
+                                id="client_id"
                                 placeholder="Enter your client Id"
-                                aria-label="clientIdLabel"
-                                value="{{clientId}}"
+                                aria-label="client_id_label"
+                                value="{{client_id}}"
                                 required>
                         </div>
 
                         <div class="grid-item">
-                            <label id="clientSecretlabel" for="clientSecret">Client Secret:</label><br/>
+                            <label id="client_secret_label" for="client_secret">Client Secret:</label><br/>
                             <input type="password"
-                                name="clientSecret"
-                                id="clientSecret"
+                                name="client_secret"
+                                id="client_secret"
                                 placeholder="Enter your client secret"
-                                aria-label="clientSecretlabel"
-                                value="{{clientSecret}}"
+                                aria-label="client_secret_label"
+                                value="{{client_secret}}"
                                 required>
                         </div>
 
                         <div class="grid-item">
-                            <label id="callBackLabel" for="callbackUrl">Callback URL:</label><br/>
+                            <label id="call_back_label" for="callback_url">Callback URL:</label><br/>
                             <input type="url"
-                                name="callbackUrl"
-                                id="callbackUrl"
+                                name="callback_url"
+                                id="callback_url"
                                 placeholder="http://localhost:3000"
-                                aria-label="callBackLabel"
-                                value="{{callbackUrl}}"
+                                aria-label="call_back_label"
+                                value="{{callback_url}}"
                                 required>
                         </div>
 
@@ -79,49 +79,53 @@
                 </div>
             </div>
 
-            {{#accessToken}}
+            {{#access_token}}
             <div class="grid-item">
                 <div class="grid-container">
                     <div class="grid-item">
                         Access Token: <br/>
 
-                        {{#accessToken}}
-                            <p class="token">{{accessToken}} <br/> <a onclick="toggleDiv('deets')" href="#">Toggle
+                        {{#access_token}}
+                            <p class="token">{{access_token}} <br/> <a onclick="toggleDiv('deets')" href="#">Toggle
                                 Details</a>
                             </p>
 
                             <div id="deets" style="display: none;">
-                                <pre><code class="language-json">{{accessTokenDetails}}</code></pre>
+                                <pre><code class="language-json">{{access_tokenDetails}}</code></pre>
                             </div>
-                        {{/accessToken}}
+                        {{/access_token}}
                     </div>
 
                     <div class="grid-item">
-                        Expiration: <br/>
-                        <div id="deets">{{expiration}}</div>
+                        Expiration: <span id="deets">{{expires_in}}</span>
                     </div>
 
                     <div class="grid-item">
-                        Refresh Token: <br/>
-                        {{#refreshToken}}
-                            <p class="token">{{refreshToken}} <br/><a href="/refresh-access-token">Refresh The Access
+                        Refresh Token:
+                        {{#refresh_token}}
+                            <span class="token">{{refresh_token}} <br/><a href="/refresh-access-token">Refresh The Access
                                 Token</a>
-                            </p>
-                        {{/refreshToken}}
+                            </span>
+                        {{/refresh_token}}
                     </div>
 
 
                 </div>
-            {{/accessToken}}
+            {{/access_token}}
         </div>
         </div>
-        {{#accessToken}}
+        {{#access_token}}
             <div class="grid-container">
+                <ul>
+                    {{#previous_seaches}}
+                        <li>{{.}}</li>
+                    {{/previous_seaches}}
+                </ul>
                 <form method="post" action="/call-api">
                     <div class="grid-item">
                         <label id="urlLabel" for="url"> Simple API Invoke With Token:</label>
                         <input type="url" id="url" name="url" aria-label="urlLabel"
-                            value="{{apiUrl}}/organizations"/>
+                            value="{{api_url}}/mkt/fmis/companies"/>
                     </div>
                     <div class="grid-item">
                         <input type="submit" value="Go!">
@@ -138,7 +142,7 @@
                 </form>
 
             </div>
-        {{/accessToken}}
+        {{/access_token}}
         <script type="text/javascript" src="../javascripts/functions.js"></script>
         <script type="text/javascript" src="../javascripts/prism.js"></script>
     </body>

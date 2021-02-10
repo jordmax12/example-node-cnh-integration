@@ -9,26 +9,27 @@ const serverUrl = `http://localhost:${port}`;
 // const CNH_BASE_AUDIENCE_URL = 'https://ag.api.cnhind.com'
 // const CNH_BASE_IDENTITY_URL = 'https://identity.cnhind.com/authorize'
 const CNH_BASE_AUDIENCE_URL = 'https://stg.api.cnhind.com'
-const CNH_BASE_IDENTITY_URL = 'https://stg.identity.cnhind.com/authorize'
+const CNH_BASE_IDENTITY_URL = 'https://stg.identity.cnhind.com'
 
 let settings = {
   audience: CNH_BASE_AUDIENCE_URL,
-  callbackUrl: `${serverUrl}/login`,
+  callback_url: `${serverUrl}/login`,
   response_type: 'code',
-  clientId: 'VzTQ0u4cEkXWohxn7pzya8ayXwRAyR5w',
-  clientSecret: 'BGRcgbCgo9N1CyRF7SGTC9ulW-se8dTqxSNQmOG7WNn0GjMKc3rHK3Cz8FWvmWDJ',
+  client_id: 'VzTQ0u4cEkXWohxn7pzya8ayXwRAyR5w',
+  client_secret: 'BGRcgbCgo9N1CyRF7SGTC9ulW-se8dTqxSNQmOG7WNn0GjMKc3rHK3Cz8FWvmWDJ',
   scope: 'offline_access',
+  grant_type: 'authorization_code',
+  api_url: CNH_BASE_AUDIENCE_URL,
+  previous_seaches: []
 };
 let metaData = {};
 
 const populateSettings = (reqBody) => {
   settings = {
     ...settings,
-    clientId: reqBody.clientId,
-    clientSecret: reqBody.clientSecret,
-    callbackUrl: reqBody.callbackUrl,
-    scope: reqBody.scope,
-    audience: reqBody.audience
+    client_id: reqBody.client_id,
+    client_secret: reqBody.client_secret,
+    callback_url: reqBody.callback_url
   };
 };
 
@@ -71,90 +72,79 @@ router.get('/', function (req, res, next) {
 
 /* Initialize OIDC login */
 router.post('/', async function ({ body }, res, next) {
-  console.log('here????', body);
   populateSettings(body);
 
   // metaData = (await axios.get(body.wellKnown)).data;
   const params = new URLSearchParams({
-    client_id: body.clientId,
+    client_id: body.client_id,
     scope: body.scope,
-    redirect_uri: body.callbackUrl,
+    redirect_uri: body.callback_url,
     response_type: settings.response_type,
     audience: body.audience
   });
-  const url = `${CNH_BASE_IDENTITY_URL}?${params.toString()}`;
-  console.log('logging url', url)
+  const url = `${CNH_BASE_IDENTITY_URL}/authorize?${params.toString()}`;
   res.redirect(url)
 });
 
 /* OIDC callback */
 router.get('/login', async function ({ query }, res, next) {
-  console.log('here?? callback', query)
-  res.status(200)
-  // if (query.error) {
-  //   const description = query.error_description;
-  //   return res.render('error', {
-  //     error: description
-  //   });
-  // }
-
-  // try {
-  //   const code = query.code;
-  //   console.log('logging code', code);
-  //   const basicAuthHeader = Buffer.from(`${settings.clientId}:${settings.clientSecret}`).toString('base64');
-  //   console.log("LOGGING CODE", code)
-  //   res.render('index')
-  //   const token = (await axios.post(metaData.token_endpoint, qs.stringify({
-  //     grant_type: 'authorization_code',
-  //     redirect_uri: settings.callbackUrl,
-  //     code,
-  //     scope: settings.scopes
-  //   }), {
-  //     headers: {
-  //       'Accept': 'application/json',
-  //       'Authorization': `Basic ${basicAuthHeader}`,
-  //       'Content-Type': 'application/x-www-form-urlencoded'
-  //     }
-  //   })).data;
-  //   console.log('logging token', token)
-  //   updateTokenInfo(token);
-
-  //   const organizationAccessUrl = await needsOrganizationAccess();
-
-  //   if (organizationAccessUrl) {
-  //     res.redirect(organizationAccessUrl);
-  //   } else {
-  //     res.render('index', settings);
-  //   }
-  // } catch (e) {
-  //   return res.render('error', {
-  //     error: e
-  //   });
-  // }
+  const data = {
+    client_id: settings.client_id,
+    client_secret: settings.client_secret,
+    redirect_uri: settings.callback_url,
+    grant_type: settings.grant_type,
+    code: query.code
+  }
+  const url = `${CNH_BASE_IDENTITY_URL}/oauth/token`;
+  try {
+    const token = await axios({
+        headers: {
+          'Accept': '*/*',
+          'Content-Type': 'application/json',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Connection': 'keep-alive',
+          'Cache-Control': 'no-cache'
+        },
+        method: 'post',
+        url,
+        data
+    })
+    settings.access_token = token.data.access_token;
+    settings.refresh_token = token.data.refresh_token;
+    settings.expires_in = token.data.expires_in;
+    res.render('index', { ...settings });
+  }
+  catch(e) {
+    console.log('logging error', e)
+    res.render('index', settings);
+  }
 });
 
 router.get('/refresh-access-token', async function (req, res, next) {
+  const data = {
+    grant_type: 'refresh_token',
+    client_id: settings.client_id,
+    client_secret: settings.client_secret,
+    refresh_token: settings.refresh_token
+  }
+  const url = `${CNH_BASE_IDENTITY_URL}/oauth/token`;
   try {
-    const buffer_from = Buffer.from(`${settings.clientId}:${settings.clientSecret}`)
-    const basicAuthHeader = buffer_from.toString('base64');
-    const test = (await axios.get(settings.wellKnown)).data;
-    const qs_test = qs.stringify({
-      grant_type: 'refresh_token',
-      redirect_uri: settings.callbackUrl,
-      refresh_token: settings.refreshToken,
-      scope: settings.scopes
+    const token = await axios({
+        headers: {
+          'Accept': '*/*',
+          'Content-Type': 'application/json',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Connection': 'keep-alive',
+          'Cache-Control': 'no-cache'
+        },
+        method: 'post',
+        url,
+        data
     })
-    console.log('logging qs_test', qs_test)
-    const token = (await axios.post(test.token_endpoint, qs_test, {
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Basic ${basicAuthHeader}`,
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    })).data;
-    console.log('successfuly got token', token)
-    updateTokenInfo(token);
-    res.render('index', settings);
+    settings.access_token = token.data.access_token;
+    // settings.refresh_token = token.data.refresh_token;
+    settings.expires_in = token.data.expires_in;
+    res.render('index', { ...settings });
   } catch (e) {
     return res.render('error', {
       error: e
@@ -164,11 +154,15 @@ router.get('/refresh-access-token', async function (req, res, next) {
 
 router.post('/call-api', async function ({ body }, res, next) {
   try {
+    const headers = {
+      'Authorization': `Bearer ${settings.access_token}`,
+      'Ocp-Apim-Subscription-Key': '4ad4152e1f0f4dca90e0cf9b986be597',
+      'Accept': 'application/json'
+    }
+    if(!settings.previous_seaches.includes(body.url))
+      settings.previous_seaches.push(body.url);
     const response = (await axios.get(body.url, {
-      headers: {
-        'Authorization': `Bearer ${settings.accessToken}`,
-        'Accept': 'application/vnd.deere.axiom.v3+json'
-      }
+      headers
     })).data;
 
     res.render('index', {
